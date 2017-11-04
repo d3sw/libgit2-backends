@@ -2,7 +2,7 @@ build:
   - image: alpine
     workdir: /usr/local/src
     commands:
-      - apk add --update alpine-sdk cmake libgit2-dev
+      - apk add --update alpine-sdk cmake libgit2-dev json-c-dev
       - cd elasticsearch
       - cmake -H. -Bbuild 
       - cmake --build build
