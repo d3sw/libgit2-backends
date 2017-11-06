@@ -28,10 +28,24 @@
 
 #include <git2.h>
 #include <git2/sys/odb_backend.h>
-#include <git2/sys/refdb_backend.h>
-#include <git2/sys/refs.h>
+#include <curl/curl.h>
+#include <json-c/json.h>
 
 #define GIT2_INDEX_NAME "git2_odb"
+
+struct curl_fetch_st {
+    char *payload;
+    size_t size;
+};
+
+/* JSON EXAMPLE
+	json = json_object_new_object();
+	json_object_object_add(json, "title", json_object_new_string("testies"));
+	json_object_object_add(json, "body", json_object_new_string("testies ... testies ... 1,2,3"));
+	json_object_object_add(json, "userId", json_object_new_int(133));
+	// free resources once finished
+	json_object_put(json);
+*/
 
 typedef struct {
 	git_odb_backend parent;
@@ -69,8 +83,7 @@ int git_odb_backend_elasticsearch(git_odb_backend **backend_out)
 
 	result = init_db();
 
-	if(result == 0)
-	{
+	if(result == 0) {
 		backend->parent.version = GIT_ODB_BACKEND_VERSION;
 		backend->parent.read = &elasticsearch_backend__read;
 		backend->parent.read_prefix = &elasticsearch_backend__read_prefix;
