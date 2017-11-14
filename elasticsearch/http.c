@@ -1,33 +1,18 @@
 /**
  * example C code using libcurl and json-c
- * to post and return a payload using
- * http://jsonplaceholder.typicode.com
+ * to make http requests.
  *
- * Requirements:
- *
- * json-c - https://github.com/json-c/json-c
- * libcurl - http://curl.haxx.se/libcurl/c
- *
- * Build:
- *
- * cc curltest.c -lcurl -ljson-c -o curltest
- *
- * Run:
- *
- * ./curltest
+ * cc httptest.c -lcurl -ljson-c -o httptest
+ * ./httptest
  * 
  */
 
-/* standard includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 
-/* json-c (https://github.com/json-c/json-c) */
 #include <json-c/json.h>
-
-/* libcurl (http://curl.haxx.se/libcurl/c) */
 #include <curl/curl.h>
 
 /* holder for curl fetch */
@@ -37,7 +22,7 @@ struct curl_fetch_st {
 };
 
 /* callback for curl fetch */
-size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
+size_t http_callback (void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;                             /* calculate buffer size */
     struct curl_fetch_st *p = (struct curl_fetch_st *) userp;   /* cast pointer to fetch struct */
 
@@ -68,7 +53,7 @@ size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
 }
 
 /* fetch and return url body via curl */
-CURLcode curl_fetch_url(CURL *ch, const char *url, struct curl_fetch_st *fetch) {
+CURLcode http_fetch_url(CURL *ch, const char *url, struct curl_fetch_st *fetch) {
     CURLcode rcode;                   /* curl result code */
 
     /* init payload */
@@ -89,7 +74,7 @@ CURLcode curl_fetch_url(CURL *ch, const char *url, struct curl_fetch_st *fetch) 
     curl_easy_setopt(ch, CURLOPT_URL, url);
 
     /* set calback function */
-    curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, curl_callback);
+    curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, http_callback);
 
     /* pass fetch struct pointer */
     curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *) fetch);
@@ -153,7 +138,7 @@ int main(int argc, char *argv[]) {
     curl_easy_setopt(ch, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
 
     /* fetch page and capture return code */
-    rcode = curl_fetch_url(ch, url, cf);
+    rcode = http_fetch_url(ch, url, cf);
 
     /* cleanup curl handle */
     curl_easy_cleanup(ch);
