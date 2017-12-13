@@ -28,8 +28,9 @@ size_t write_http_response (void *contents,
 /* initialize the http payload */
 void init_payload (struct http_payload *body);
 
-char *get_http(CURL *handle, char *url, struct http_payload *fetch)
-{
+/* fetch and return url body via curl */
+char *request_http(CURL *handle, const char *url, const char *action, struct http_payload *fetch) {
+
     /* init payload */
     init_payload(fetch);
 
@@ -37,52 +38,19 @@ char *get_http(CURL *handle, char *url, struct http_payload *fetch)
     curl_easy_setopt(handle, CURLOPT_URL, url);
 
     /* set http action */
-    curl_easy_setopt(handle, CURLOPT_HTTPGET, 1);
-
-    /* follow locations specified by the response header */
-    curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, action);
 
     /* set calback function */
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_http_response);
 
     /* pass fetch struct pointer */
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void *) fetch);
-
-    /* perform the request */
-    curl_easy_perform(handle);
-
-    /* cleaning all curl stuff */
-    curl_easy_cleanup(handle);
-
-    return fetch->payload;
-}
-
-/* fetch and return url body via curl */
-char *post_http(CURL *handle, const char *url, struct http_payload *fetch) {
-
-    /* init payload */
-    init_payload(fetch);
-
-    /* set url to fetch */
-    curl_easy_setopt(handle, CURLOPT_URL, url);
-
-    /* set calback function */
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_http_response);
-
-    /* pass fetch struct pointer */
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void *) fetch);
-
-    /* set default user agent */
-    curl_easy_setopt(handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
     /* set timeout */
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, 5);
 
     /* enable location redirects */
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
-
-    /* set maximum allowed redirects */
-    curl_easy_setopt(handle, CURLOPT_MAXREDIRS, 1);
 
     /* perform http request */
     int curl_result = curl_easy_perform(handle);
@@ -124,7 +92,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    content = get_http(get_handle, url_get, cf);
+    content = request_http(get_handle, url_get, "GET", cf);
     printf("%s", content);
 
     /* init curl handle */
@@ -148,12 +116,11 @@ int main(int argc, char *argv[]) {
     json_object_object_add(json, "userId", json_object_new_int(133));
 
     /* set curl options */
-    curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
 
     /* fetch page and capture return code */
-    content = post_http(handle, url, cf);
+    content = request_http(handle, url, "POST", cf);
 
     /* cleanup curl handle */
     curl_easy_cleanup(handle);
