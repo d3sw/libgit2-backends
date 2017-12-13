@@ -77,10 +77,6 @@ int main(int argc, char *argv[]) {
     struct http_payload curl_fetch;                        /* curl fetch struct */
     struct http_payload *cf = &curl_fetch;                 /* pointer to fetch struct */
     struct curl_slist *headers = NULL;                      /* http headers to send with request */
-
-    /* url to test site */
-    char *url = "http://jsonplaceholder.typicode.com/posts/";
-    char *url_get = "http://dimuthu.org";
     char *content = NULL;
 
     CURL *get_handle;
@@ -92,7 +88,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    content = request_http(get_handle, url_get, "GET", cf);
+    content = request_http(get_handle, "http://dimuthu.org", "GET", cf);
     printf("%s", content);
 
     /* init curl handle */
@@ -120,7 +116,7 @@ int main(int argc, char *argv[]) {
     curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
 
     /* fetch page and capture return code */
-    content = request_http(handle, url, "POST", cf);
+    content = request_http(handle, "http://jsonplaceholder.typicode.com/posts/", "POST", cf);
 
     /* cleanup curl handle */
     curl_easy_cleanup(handle);
