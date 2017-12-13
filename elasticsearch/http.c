@@ -29,7 +29,10 @@ size_t write_http_response (void *contents,
 void init_payload (struct http_payload *body);
 
 /* fetch and return url body via curl */
-char *request_http(CURL *handle, const char *url, const char *action, struct http_payload *fetch) {
+char *request_http(const char *url, const char *action, struct http_payload *fetch) {
+
+    /* init curl handle */
+    CURL *handle = curl_easy_init();
 
     /* init payload */
     init_payload(fetch);
@@ -55,6 +58,9 @@ char *request_http(CURL *handle, const char *url, const char *action, struct htt
     /* perform http request */
     int curl_result = curl_easy_perform(handle);
 
+    /* cleanup curl handle */
+    curl_easy_cleanup(handle);
+
     /* make the http request */
     if (curl_result != CURLE_OK || fetch->size < 1) {
         /* log error */
@@ -69,7 +75,6 @@ char *request_http(CURL *handle, const char *url, const char *action, struct htt
 }
 
 int main(int argc, char *argv[]) {
-    CURL *handle;                                               /* curl handle */
 
     json_object *json;                                      /* json post body */
     enum json_tokener_error jerr = json_tokener_success;    /* json parse error */
@@ -79,25 +84,10 @@ int main(int argc, char *argv[]) {
     struct curl_slist *headers = NULL;                      /* http headers to send with request */
     char *content = NULL;
 
-    CURL *get_handle;
-    /* init curl handle */
-    if ((get_handle = curl_easy_init()) == NULL) {
-        /* log error */
-        fprintf(stderr, "ERROR: Failed to create curl handle in fetch_session");
-        /* return error */
-        return 1;
-    }
 
-    content = request_http(get_handle, "http://dimuthu.org", "GET", cf);
+
+    content = request_http("http://dimuthu.org", "GET", cf);
     printf("%s", content);
-
-    /* init curl handle */
-    if ((handle = curl_easy_init()) == NULL) {
-        /* log error */
-        fprintf(stderr, "ERROR: Failed to create curl handle in fetch_session");
-        /* return error */
-        return 1;
-    }
 
     /* set content type */
     headers = curl_slist_append(headers, "Accept: application/json");
@@ -112,14 +102,11 @@ int main(int argc, char *argv[]) {
     json_object_object_add(json, "userId", json_object_new_int(133));
 
     /* set curl options */
-    curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
+    //curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+    //curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
 
     /* fetch page and capture return code */
-    content = request_http(handle, "http://jsonplaceholder.typicode.com/posts/", "POST", cf);
-
-    /* cleanup curl handle */
-    curl_easy_cleanup(handle);
+    content = request_http("http://jsonplaceholder.typicode.com/posts/", "POST", cf);
 
     /* free headers */
     curl_slist_free_all(headers);
