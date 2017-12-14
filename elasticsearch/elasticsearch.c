@@ -28,6 +28,7 @@
 #include <git2.h>
 #include <git2/sys/odb_backend.h>
 #include <json-c/json.h>
+#include "http.h"
 
 #define GIT2_INDEX_NAME "git2_odb"
 
@@ -65,6 +66,9 @@ static int create_index()
 
 static int init_db()
 {
+	char *content = get_http_json("www.google.com");
+	printf("%s",content);
+
 	int result;
 	return result;
 }
@@ -89,4 +93,8 @@ int git_odb_backend_elasticsearch(git_odb_backend **backend_out)
 	}
 
 	return result;
+}
+
+int main(int argc, char *argv[]) {
+    printf("%s\n", get_http_json("http://google.com"));
 }
