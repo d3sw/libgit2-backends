@@ -10,27 +10,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <curl/curl.h>
-
-/* structure to hold payload and size */
-struct http_payload {
-    char *payload;
-    size_t size;
-};
-
-/* function to write the response into the struct */
-size_t write_http_response (void *contents, 
-    size_t size, 
-    size_t nmemb, 
-    void *userp);
-
-/* function to initialize headers from a string */
-void init_headers(CURL *handle, char **headers, int headers_count);
-
-/* initialize the http payload */
-void init_payload (struct http_payload *body);
-
-/* make http request */
-char *request_http(const char *url, const char *action, char **headers, int headers_count, const char *body);
+#include "http.h"
 
 /* call http get with json content headers */
 char *get_http_json(const char *url) {
