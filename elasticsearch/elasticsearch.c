@@ -25,18 +25,11 @@
 
 #include <assert.h>
 #include <string.h>
-
 #include <git2.h>
 #include <git2/sys/odb_backend.h>
-#include <curl/curl.h>
 #include <json-c/json.h>
 
 #define GIT2_INDEX_NAME "git2_odb"
-
-struct curl_fetch_st {
-    char *payload;
-    size_t size;
-};
 
 /* JSON EXAMPLE
 	json = json_object_new_object();

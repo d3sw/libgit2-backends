@@ -1,6 +1,5 @@
 /**
  * 
- * json-c - https://github.com/json-c/json-c
  * libcurl - http://curl.haxx.se/libcurl/c
  *
  * cc http.c -lcurl -ljson-c -o httptest
@@ -10,7 +9,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <json-c/json.h>
 #include <curl/curl.h>
 
 /* structure to hold payload and size */
