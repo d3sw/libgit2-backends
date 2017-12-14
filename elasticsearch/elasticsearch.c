@@ -23,6 +23,10 @@
  * Boston, MA 02110-1301, USA.
  */
 
+/*
+*	cc elasticsearch.c http.c -lgit2 -lcurl -ljson-c -o elasticsearch
+*/
+
 #include <assert.h>
 #include <string.h>
 #include <git2.h>

@@ -1,9 +1,10 @@
-/**
- * 
- * libcurl - http://curl.haxx.se/libcurl/c
- *
- * cc http.c -lcurl -ljson-c -o httptest
- */
+/*
+* Filename: http.c
+* Language: C
+* Purpose:  Provide simplified functions for making http
+*           calls with common parameters using the libcurl
+*           libraries. 
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,7 +94,7 @@ char *request_http(const char *url, const char *action, char **headers, int head
     return cf->payload;
 }
 
-int main(int argc, char *argv[]) {
+int main_test(int argc, char *argv[]) {
 
     printf("%s\n", get_http_json("http://google.com"));
 
