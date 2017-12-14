@@ -32,19 +32,28 @@ void init_headers(CURL *handle, char **headers, int headers_count);
 void init_payload (struct http_payload *body);
 
 /* fetch and return url body via curl */
-char *request_http(const char *url, const char *action, char **headers, int headers_count, struct http_payload *fetch) {
+char *request_http(const char *url, const char *action, char **headers, int headers_count, const char *body) {
 
     /* init curl handle */
     CURL *handle = curl_easy_init();
 
+    struct http_payload curl_fetch;         /* curl fetch struct */
+    struct http_payload *cf = &curl_fetch;  /* pointer to fetch struct */
+
     /* init payload */
-    init_payload(fetch);
+    init_payload(cf);
 
     /* set url to fetch */
     curl_easy_setopt(handle, CURLOPT_URL, url);
 
     /* set curl headers */
     init_headers(handle, headers, headers_count);
+
+    /* set request body */
+    if (body != NULL)
+    {
+        curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
+    }
 
     /* set http action */
     curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, action);
@@ -53,7 +62,7 @@ char *request_http(const char *url, const char *action, char **headers, int head
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_http_response);
 
     /* pass fetch struct pointer */
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void *) fetch);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void *) cf);
 
     /* set timeout */
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, 5);
@@ -68,7 +77,7 @@ char *request_http(const char *url, const char *action, char **headers, int head
     curl_easy_cleanup(handle);
 
     /* make the http request */
-    if (curl_result != CURLE_OK || fetch->size < 1) {
+    if (curl_result != CURLE_OK || cf->size < 1) {
         /* log error */
         fprintf(stderr, "ERROR: Failed to fetch url (%s) - curl said: %s",
             url, curl_easy_strerror(curl_result));
@@ -77,66 +86,24 @@ char *request_http(const char *url, const char *action, char **headers, int head
     }
 
     /* return */
-    return fetch->payload;
+    return cf->payload;
 }
 
 int main(int argc, char *argv[]) {
 
     json_object *json;                                      /* json post body */
     enum json_tokener_error jerr = json_tokener_success;    /* json parse error */
-
-    struct http_payload curl_fetch;                        /* curl fetch struct */
-    struct http_payload *cf = &curl_fetch;                 /* pointer to fetch struct */
     char *content = NULL;
 
     char *get_headers[] = {};
-    content = request_http("http://dimuthu.org", "GET", get_headers, 0, cf);
+    content = request_http("http://dimuthu.org", "GET", get_headers, 0, NULL);
     printf("%s", content);
-
-    /* create json object for post */
-    json = json_object_new_object();
-
-    /* build post data */
-    json_object_object_add(json, "title", json_object_new_string("testies"));
-    json_object_object_add(json, "body", json_object_new_string("testies ... testies ... 1,2,3"));
-    json_object_object_add(json, "userId", json_object_new_int(133));
 
     /* fetch page and capture return code */
     char *post_headers[] = {"Accept: application/json","Content-Type: application/json"};
-    content = request_http("http://jsonplaceholder.typicode.com/posts/", "POST", post_headers, 2, cf);
-
-    /* free json object */
-    json_object_put(json);
-
-    /* check payload */
-    if (cf->payload != NULL) {
-        /* print result */
-        printf("CURL Returned: \n%s\n", cf->payload);
-        /* parse return */
-        json = json_tokener_parse_verbose(cf->payload, &jerr);
-        /* free payload */
-        free(cf->payload);
-    } else {
-        /* error */
-        fprintf(stderr, "ERROR: Failed to populate payload");
-        /* free payload */
-        free(cf->payload);
-        /* return */
-        return 3;
-    }
-
-    /* check error */
-    if (jerr != json_tokener_success) {
-        /* error */
-        fprintf(stderr, "ERROR: Failed to parse json string");
-        /* free json object */
-        json_object_put(json);
-        /* return */
-        return 4;
-    }
-
-    /* debugging */
-    printf("Parsed JSON: %s\n", json_object_to_json_string(json));
+    char *body = "{\"title\":\"testies\", \"body\":\"testies ... testies ... 1,2,3\", \"userId\":133}";
+    content = request_http("http://jsonplaceholder.typicode.com/posts/", "POST", post_headers, 2, body);
+    printf("%s", content);
 
     /* exit */
     return 0;
