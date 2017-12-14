@@ -31,6 +31,32 @@ void init_headers(CURL *handle, char **headers, int headers_count);
 /* initialize the http payload */
 void init_payload (struct http_payload *body);
 
+/* make http request */
+char *request_http(const char *url, const char *action, char **headers, int headers_count, const char *body);
+
+/* call http get with json content headers */
+char *get_http_json(const char *url) {
+    char *headers[] = {"Accept: application/json","Content-Type: application/json"};
+    return request_http(url, "GET", headers, 2, NULL);
+}
+
+/* call http delete */
+void delete_http(const char *url) {
+    request_http(url, "DELETE", NULL, 0, NULL);
+}
+
+/* call http post with json content headers */
+char *post_http_json(const char *url, const char *body) {
+    char *headers[] = {"Accept: application/json","Content-Type: application/json"};
+    return request_http(url, "POST", headers, 2, body); 
+}
+
+/* call http put with json content headers */
+char *put_http_json(const char *url, const char *body) {
+    char *headers[] = {"Accept: application/json","Content-Type: application/json"};
+    return request_http(url, "PUT", headers, 2, body); 
+}
+
 /* fetch and return url body via curl */
 char *request_http(const char *url, const char *action, char **headers, int headers_count, const char *body) {
 
@@ -91,19 +117,10 @@ char *request_http(const char *url, const char *action, char **headers, int head
 
 int main(int argc, char *argv[]) {
 
-    json_object *json;                                      /* json post body */
-    enum json_tokener_error jerr = json_tokener_success;    /* json parse error */
-    char *content = NULL;
+    printf("%s\n", get_http_json("http://google.com"));
 
-    char *get_headers[] = {};
-    content = request_http("http://dimuthu.org", "GET", get_headers, 0, NULL);
-    printf("%s", content);
-
-    /* fetch page and capture return code */
-    char *post_headers[] = {"Accept: application/json","Content-Type: application/json"};
     char *body = "{\"title\":\"testies\", \"body\":\"testies ... testies ... 1,2,3\", \"userId\":133}";
-    content = request_http("http://jsonplaceholder.typicode.com/posts/", "POST", post_headers, 2, body);
-    printf("%s", content);
+    printf("%s\n", post_http_json("http://jsonplaceholder.typicode.com/posts/", body));
 
     /* exit */
     return 0;
