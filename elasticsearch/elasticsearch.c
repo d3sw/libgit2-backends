@@ -47,43 +47,88 @@
 
 typedef struct {
 	git_odb_backend parent;
+	const char *hostname;
 } elasticsearch_backend;
 
-int elasticsearch_backend__read_header(size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){}
+int elasticsearch_backend__read_header(size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){
+	return 0;
+}
 
-int elasticsearch_backend__read(void **data_p, size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){}
+int elasticsearch_backend__read(void **data_p, size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){
+	return 0;
+}
 
 int elasticsearch_backend__read_prefix(git_oid *out_oid, void **data_p, size_t *len_p, git_otype *type_p, git_odb_backend *_backend,
-	const git_oid *short_oid, size_t len) {}
+	const git_oid *short_oid, size_t len) {
+	return 0;
+}
 	
-int elasticsearch_backend__exists(git_odb_backend *_backend, const git_oid *oid){}
+int elasticsearch_backend__exists(git_odb_backend *_backend, const git_oid *oid){
+	return 0;
+}
 	
-int elasticsearch_backend__write(git_odb_backend *_backend, const git_oid *id, const void *data, size_t len, git_otype type){}
+int elasticsearch_backend__write(git_odb_backend *_backend, const git_oid *id, const void *data, size_t len, git_otype type){
+	return 0;
+}
 
-void elasticsearch_backend__free(git_odb_backend *_backend){}
+void elasticsearch_backend__free(git_odb_backend *_backend){
 
-static int create_index()
-{
-	int result;
+}
+
+char *concat(const char* s1, const char* s2){
+    char* result = malloc(strlen(s1) + strlen(s2) + 1);
+
+    if (result) // thanks @pmg
+    {
+        strcpy(result, s1);
+        strcat(result, s2);
+    }
+
+    return result;
+}
+
+char *join(const char* s[], int size){
+	char* result = "";
+	for(int i=0;i<size;i++)
+	{
+		result = concat(result, s[i]);
+	}
 	return result;
 }
 
-static int init_db()
-{
-	char *content = get_http_json("www.google.com");
-	printf("%s",content);
-
+static int init_db(const char *hostname){
 	int result;
+
+	const char* parts[4] = {"http://",hostname,"/",GIT2_INDEX_NAME};
+	char* uri = join(parts,4);
+
+	/* check whether or not the index exists */
+	const char* content = get_http_json(uri);
+	printf("%s", content);
+
+	/* create the index */
+
 	return result;
 }
 
-int git_odb_backend_elasticsearch(git_odb_backend **backend_out)
-{
+int git_odb_backend_elasticsearch(git_odb_backend **backend_out, const char *hostname){
 	elasticsearch_backend *backend;
 	int result;
 
-	result = init_db();
+	/* allocate memory for the backend object */
+	backend = calloc(1, sizeof(elasticsearch_backend));
+	if (backend == NULL) {
+		giterr_set_oom();
+		return GIT_ERROR;
+	}
 
+	/* set the backend hostname */
+	backend->hostname = hostname;
+
+	/* initialize the elasticsearch instance */
+	result = init_db(hostname);
+
+	/* set odb functions for the backend */
 	if(result == 0) {
 		backend->parent.version = GIT_ODB_BACKEND_VERSION;
 		backend->parent.read = &elasticsearch_backend__read;
@@ -100,5 +145,5 @@ int git_odb_backend_elasticsearch(git_odb_backend **backend_out)
 }
 
 int main(int argc, char *argv[]) {
-    printf("%s\n", get_http_json("http://google.com"));
+    init_db("logs-db.service.owf-dev:9200");
 }
