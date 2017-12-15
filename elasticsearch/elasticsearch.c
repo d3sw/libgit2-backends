@@ -104,9 +104,20 @@ static int init_db(const char *hostname){
 
 	/* check whether or not the index exists */
 	const char* content = get_http_json(uri);
-	printf("%s", content);
 
-	/* create the index */
+    json_object *json;                                      /* json post body */
+    enum json_tokener_error jerr = json_tokener_success;    /* json parse error */
+	json = json_tokener_parse_verbose(content, &jerr);
+
+	struct json_object *status_json;
+	json_object_object_get_ex(json, "status", &status_json);
+	const char *status = json_object_to_json_string(status_json);
+
+	/* create index if not found */
+	if (strcmp(status,"404") == 0)
+	{
+		put_http_json(uri, NULL);
+	}
 
 	return result;
 }
