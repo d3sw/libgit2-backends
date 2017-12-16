@@ -20,8 +20,9 @@ char *get_http_json(const char *url) {
 }
 
 /* call http delete */
-void delete_http(const char *url) {
-    request_http(url, "DELETE", NULL, 0, NULL);
+char *delete_http_json(const char *url) {
+    char *headers[] = {"Accept: application/json","Content-Type: application/json"};    
+    return request_http(url, "DELETE", headers, 2, NULL);
 }
 
 /* call http post with json content headers */

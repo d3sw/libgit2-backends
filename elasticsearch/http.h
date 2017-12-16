@@ -1,3 +1,11 @@
+/*
+* Filename: http.h
+* Language: C
+* Purpose:  Provide simplified functions for making http
+*           calls with common parameters using the libcurl
+*           libraries. 
+*/
+
 #ifndef FUNCTIONS_H_INCLUDED
 #define FUNCTIONS_H_INCLUDED
 #endif
@@ -35,7 +43,7 @@ char *request_http(const char *url,
 char *get_http_json(const char *url);
 
 /* call http delete */
-void delete_http(const char *url);
+char *delete_http_json(const char *url);
 
 /* call http post with json content headers */
 char *post_http_json(const char *url, const char *body);

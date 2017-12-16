@@ -27,6 +27,7 @@
 *	cc elasticsearch.c http.c -lgit2 -lcurl -ljson-c -o elasticsearch
 */
 
+#include <math.h>
 #include <assert.h>
 #include <string.h>
 #include <git2.h>
@@ -37,15 +38,6 @@
 #define GIT2_INDEX_NAME "git2_odb"
 #define GIT2_TYPE_NAME "git2_odb"
 
-/* JSON EXAMPLE
-	json = json_object_new_object();
-	json_object_object_add(json, "title", json_object_new_string("testies"));
-	json_object_object_add(json, "body", json_object_new_string("testies ... testies ... 1,2,3"));
-	json_object_object_add(json, "userId", json_object_new_int(133));
-	// free resources once finished
-	json_object_put(json);
-*/
-
 typedef struct {
 	git_odb_backend parent;
 	const char *hostname;
@@ -55,6 +47,14 @@ typedef struct {
 
 char *join(const char* s[], int size);
 char *concat(const char* s1, const char* s2);
+
+char *create_document(elasticsearch_backend *db, char *id, int size, int type, char *data);
+char *create_index(elasticsearch_backend *db);
+char *get_document(elasticsearch_backend *db, char *id);
+char *get_index(elasticsearch_backend *db);
+char *update_document(elasticsearch_backend *db, char *id, int size, int type, char *data);
+char *delete_document(elasticsearch_backend *db, char *id);
+char *delete_index(elasticsearch_backend *db);
 
 int elasticsearch_backend__read_header(size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){
 	elasticsearch_backend *backend;
@@ -69,24 +69,28 @@ int elasticsearch_backend__read_header(size_t *len_p, git_otype *type_p, git_odb
 	const char *query = join((const char*[3]){backend->index_uri,"/",(char *)oid->id},3);
 	const char *content = get_http_json(query);
 	
-	/* set parameter values from document type and size properties */
+	/* fail if the object wasn't returned */
+	if (strcmp(content,"")==0){
+		return GIT_ENOTFOUND;
+	}
 
+	/* set parameter values from document type and size properties */
     json_object *json;                                      /* json response */
     enum json_tokener_error jerr = json_tokener_success;    /* json parse error */
 	json = json_tokener_parse_verbose(content, &jerr);
 
-	struct json_object *status_json;
-	json_object_object_get_ex(json, "status", &status_json);
-	const char *status = json_object_to_json_string(status_json);
-	
-	/* create index if not found */
-	if (strcmp(status,"200") == 0){
-		//*type_p = (git_otype)sqlite3_column_int(backend->st_read_header, 0);
-		//*len_p = (size_t)sqlite3_column_int(backend->st_read_header, 1);
-		error = GIT_OK;
-	} else {
-		error = GIT_ENOTFOUND;
-	}
+	struct json_object *type_json;
+	struct json_object *size_json;
+
+	json_object_object_get_ex(json, "type", &type_json);
+	json_object_object_get_ex(json, "size", &size_json);
+
+	const char *type_c = json_object_to_json_string(type_json);
+	const char *size_c = json_object_to_json_string(size_json);
+
+	*type_p = (git_otype)atoi(type_c);
+	*len_p = (size_t)atoi(size_c);
+	error = GIT_OK;
 
 	return error;
 }
@@ -207,9 +211,70 @@ int main(int argc, char *argv[]) {
 	backend->index_uri = join((const char*[4]){"http://",backend->hostname,"/",GIT2_INDEX_NAME},4);
 	backend->type_uri = join((const char*[3]){backend->index_uri,"/",GIT2_TYPE_NAME},3);
 
-	/* initialize the elasticsearch instance */
-	result = init_db(backend);
-	printf("%s", get_http_json(backend->index_uri));
+	printf("%s\n",delete_index(backend));
+	/*
+	printf("%s\n",create_index(backend));
+	printf("%s\n",create_document(backend,"myid123",1,2,"mydata"));	
+	printf("%s\n",get_index(backend));
+	printf("%s\n",get_document(backend, "myid123"));
+	printf("%s\n",update_document(backend, "myid123",2,3,"mydataagain"));
+	printf("%s\n",get_document(backend, "myid123"));
+	printf("%s\n",delete_document(backend, "myid123"));
+	*/
+}
+
+char *create_document(elasticsearch_backend *db,char *id, int size, int type, char *data){
+	int type_len = (int)((ceil(log10(type))+1)*sizeof(char));
+	int size_len = (int)((ceil(log10(size))+1)*sizeof(char));
+	char type_c[type_len];
+	char size_c[size_len];
+	sprintf(type_c,"%d", type);
+	sprintf(size_c,"%d", size);
+
+	const char *doc = join((const char*[11]){
+		"{ ",
+			"\"type\" : ", type_c, ", ",
+			"\"size\" : ", size_c, ", ",
+			"\"data\" : \"", data, "\"",
+		"}"
+	},11);
+	return put_http_json(join((const char*[3]){db->type_uri,"/",id},3),doc);
+}
+
+char *create_index(elasticsearch_backend *db){
+	static const char *mapping =
+		"{ "
+			"\"mappings\" : { "
+				"\"git2_odb\" : { "
+					"\"properties\" : { "
+						"\"type\" : { \"type\" : \"integer\" }, "
+						"\"size\" : { \"type\" : \"integer\" }, "
+						"\"data\" : { \"type\" : \"binary\" } "
+					"} "
+				"} "
+			"} "
+		"}";
+	return put_http_json(db->index_uri, mapping);
+}
+
+char *get_document(elasticsearch_backend *db, char *id) {
+	return get_http_json(join((const char*[3]){db->type_uri,"/",id},3));
+}
+
+char *get_index(elasticsearch_backend *db){
+	return get_http_json(db->index_uri);
+}
+
+char *update_document(elasticsearch_backend *db,char *id, int size, int type, char *data){
+	return create_document(db, id, size, type, data);
+}
+
+char *delete_document(elasticsearch_backend *db, char *id){
+	return delete_http_json(join((const char*[3]){db->type_uri,"/",id},3));
+}
+
+char *delete_index(elasticsearch_backend *db){
+	return delete_http_json(db->index_uri);
 }
 
 char *concat(const char* s1, const char* s2){
