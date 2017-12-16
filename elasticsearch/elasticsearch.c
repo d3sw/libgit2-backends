@@ -48,13 +48,13 @@ typedef struct {
 char *join(const char* s[], int size);
 char *concat(const char* s1, const char* s2);
 
-char *create_document(elasticsearch_backend *db, char *id, int size, int type, char *data);
-char *create_index(elasticsearch_backend *db);
-char *get_document(elasticsearch_backend *db, char *id);
-char *get_index(elasticsearch_backend *db);
-char *update_document(elasticsearch_backend *db, char *id, int size, int type, char *data);
-char *delete_document(elasticsearch_backend *db, char *id);
-char *delete_index(elasticsearch_backend *db);
+char *create_document(char *type_uri, char *id, int size, int type, char *data);
+char *create_index(char *index_uri);
+char *get_document(char *type_uri, char *id);
+char *get_index(char *index_uri);
+char *update_document(char *type_uri, char *id, int size, int type, char *data);
+char *delete_document(char *type_uri, char *id);
+char *delete_index(char *index_uri);
 
 int elasticsearch_backend__read_header(size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid){
 	elasticsearch_backend *backend;
@@ -196,34 +196,74 @@ int git_odb_backend_elasticsearch(git_odb_backend **backend_out, const char *hos
 }
 
 int main(int argc, char *argv[]) {
-	elasticsearch_backend *backend;
+	/*
+	elasticsearch_backend *db;
 	int result = 0;
 
-	/* allocate memory for the backend object */
-	backend = calloc(1, sizeof(elasticsearch_backend));
-	if (backend == NULL) {
+	db = calloc(1, sizeof(elasticsearch_backend));
+	if (db == NULL) {
 		giterr_set_oom();
 		return GIT_ERROR;
 	}
 
-	/* set the backend hostname */
-	backend->hostname = "logs-db.service.owf-dev:9200";
-	backend->index_uri = join((const char*[4]){"http://",backend->hostname,"/",GIT2_INDEX_NAME},4);
-	backend->type_uri = join((const char*[3]){backend->index_uri,"/",GIT2_TYPE_NAME},3);
-
-	printf("%s\n",delete_index(backend));
-	/*
-	printf("%s\n",create_index(backend));
-	printf("%s\n",create_document(backend,"myid123",1,2,"mydata"));	
-	printf("%s\n",get_index(backend));
-	printf("%s\n",get_document(backend, "myid123"));
-	printf("%s\n",update_document(backend, "myid123",2,3,"mydataagain"));
-	printf("%s\n",get_document(backend, "myid123"));
-	printf("%s\n",delete_document(backend, "myid123"));
+	db->hostname = "logs-db.service.owf-dev:9200";
+	db->index_uri = join((const char*[4]){"http://",db->hostname,"/",GIT2_INDEX_NAME},4);
+	db->type_uri = join((const char*[3]){db->index_uri,"/",GIT2_TYPE_NAME},3);
 	*/
+
+	char *hostname = "logs-db.service.owf-dev:9200";
+	char *test_num;
+	char *index_name;
+	char *index_uri;
+	char *type_uri;
+	char *document_id;
+	char *document_data;
+
+	printf("\n%s\n\n","Starting Tests...");
+
+	/* create index - already exists */
+
+	index_uri = join((const char*[3]){"http://",hostname,"/test1"},3);	
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Create Index - Already Exists: ", create_index(index_uri));
+	delete_index(index_uri);
+
+	/* create index - standard */
+	index_uri = join((const char*[3]){"http://",hostname,"/test2"},3);	
+	printf("%s\n\n%s\n\n","Create Index - Standard: ", create_index(index_uri));
+	delete_index(index_uri);
+
+	/* create document - already exists */
+	index_uri = join((const char*[3]){"http://",hostname,"/test3"},3);
+	type_uri = join((const char*[3]){index_uri,"/","test3"},3);	
+	create_index(index_uri);
+	create_document(type_uri,"test3-id",3,6,"test3-data");
+	printf("%s\n\n%s\n\n","Create Document - Already Exists: ", create_document(type_uri,"test3-id",3,6,"test3-data"));
+	delete_index(index_uri);
+
+	/* create document - standard */
+	index_uri = join((const char*[3]){"http://",hostname,"/test4"},3);
+	type_uri = join((const char*[3]){index_uri,"/","test4"},3);	
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Create Document - Standard: ", create_document(type_uri,"test4-id",4,8,"test4-data"));
+	delete_index(index_uri);
+
+	/* get document - doesn't exist */
+
+
+	/* get document - standard */
+	/* get index - doesn't exist */
+	/* get index - standard */
+	/* update document - doesn't exist */
+	/* update document - standard */
+	/* delete document - doesn't exit */
+	/* delete document - standard */
+	/* delete index - deoesn't exist */
+	/* delete index - standard */
+
 }
 
-char *create_document(elasticsearch_backend *db,char *id, int size, int type, char *data){
+char *create_document(char *type_uri,char *id, int size, int type, char *data){
 	int type_len = (int)((ceil(log10(type))+1)*sizeof(char));
 	int size_len = (int)((ceil(log10(size))+1)*sizeof(char));
 	char type_c[type_len];
@@ -238,10 +278,10 @@ char *create_document(elasticsearch_backend *db,char *id, int size, int type, ch
 			"\"data\" : \"", data, "\"",
 		"}"
 	},11);
-	return put_http_json(join((const char*[3]){db->type_uri,"/",id},3),doc);
+	return put_http_json(join((const char*[3]){type_uri,"/",id},3),doc);
 }
 
-char *create_index(elasticsearch_backend *db){
+char *create_index(char *index_uri){
 	static const char *mapping =
 		"{ "
 			"\"mappings\" : { "
@@ -254,27 +294,27 @@ char *create_index(elasticsearch_backend *db){
 				"} "
 			"} "
 		"}";
-	return put_http_json(db->index_uri, mapping);
+	return put_http_json(index_uri, mapping);
 }
 
-char *get_document(elasticsearch_backend *db, char *id) {
-	return get_http_json(join((const char*[3]){db->type_uri,"/",id},3));
+char *get_document(char *type_uri, char *id) {
+	return get_http_json(join((const char*[3]){type_uri,"/",id},3));
 }
 
-char *get_index(elasticsearch_backend *db){
-	return get_http_json(db->index_uri);
+char *get_index(char *index_uri){
+	return get_http_json(index_uri);
 }
 
-char *update_document(elasticsearch_backend *db,char *id, int size, int type, char *data){
-	return create_document(db, id, size, type, data);
+char *update_document(char *type_uri, char *id, int size, int type, char *data){
+	return create_document(type_uri, id, size, type, data);
 }
 
-char *delete_document(elasticsearch_backend *db, char *id){
-	return delete_http_json(join((const char*[3]){db->type_uri,"/",id},3));
+char *delete_document(char *type_uri, char *id){
+	return delete_http_json(join((const char*[3]){type_uri,"/",id},3));
 }
 
-char *delete_index(elasticsearch_backend *db){
-	return delete_http_json(db->index_uri);
+char *delete_index(char *index_uri){
+	return delete_http_json(index_uri);
 }
 
 char *concat(const char* s1, const char* s2){
