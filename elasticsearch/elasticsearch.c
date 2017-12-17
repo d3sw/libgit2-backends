@@ -305,7 +305,24 @@ int main(int argc, char *argv[]) {
 	delete_index(index_uri);
 
 	/* delete document - doesn't exit */
+	test_num = "11";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Delete Document - Doesn't Exist: ", delete_document(type_uri,index_name));
+	delete_index(index_uri);
+
 	/* delete document - standard */
+	test_num = "12";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	create_document(type_uri,index_name,1,2,index_name);
+	printf("%s\n\n%s\n\n","Delete Document - Standard: ", delete_document(type_uri,index_name));
+	delete_index(index_uri);
+
 	/* delete index - deoesn't exist */
 	/* delete index - standard */
 
