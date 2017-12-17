@@ -216,46 +216,94 @@ int main(int argc, char *argv[]) {
 	char *index_name;
 	char *index_uri;
 	char *type_uri;
-	char *document_id;
-	char *document_data;
 
 	printf("\n%s\n\n","Starting Tests...");
 
 	/* create index - already exists */
-
-	index_uri = join((const char*[3]){"http://",hostname,"/test1"},3);	
+	test_num = "1";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
 	create_index(index_uri);
 	printf("%s\n\n%s\n\n","Create Index - Already Exists: ", create_index(index_uri));
 	delete_index(index_uri);
 
 	/* create index - standard */
-	index_uri = join((const char*[3]){"http://",hostname,"/test2"},3);	
+	test_num = "2";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
 	printf("%s\n\n%s\n\n","Create Index - Standard: ", create_index(index_uri));
 	delete_index(index_uri);
 
 	/* create document - already exists */
-	index_uri = join((const char*[3]){"http://",hostname,"/test3"},3);
-	type_uri = join((const char*[3]){index_uri,"/","test3"},3);	
+	test_num = "3";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
 	create_index(index_uri);
-	create_document(type_uri,"test3-id",3,6,"test3-data");
-	printf("%s\n\n%s\n\n","Create Document - Already Exists: ", create_document(type_uri,"test3-id",3,6,"test3-data"));
+	create_document(type_uri,index_name,1,2,index_name);
+	printf("%s\n\n%s\n\n","Create Document - Already Exists: ", create_document(type_uri,index_name,1,2,index_name));
 	delete_index(index_uri);
 
 	/* create document - standard */
-	index_uri = join((const char*[3]){"http://",hostname,"/test4"},3);
-	type_uri = join((const char*[3]){index_uri,"/","test4"},3);	
+	test_num = "4";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
 	create_index(index_uri);
-	printf("%s\n\n%s\n\n","Create Document - Standard: ", create_document(type_uri,"test4-id",4,8,"test4-data"));
+	printf("%s\n\n%s\n\n","Create Document - Standard: ", create_document(type_uri,index_name,1,2,index_name));
 	delete_index(index_uri);
 
 	/* get document - doesn't exist */
-
+	test_num = "5";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Get Document - Doesn't Exist: ", get_document(type_uri,index_name));
+	delete_index(index_uri);
 
 	/* get document - standard */
+	test_num = "6";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	create_document(type_uri,index_name,1,2,index_name);
+	printf("%s\n\n%s\n\n","Get Document - Standard: ", get_document(type_uri,index_name));
+	delete_index(index_uri);
+
 	/* get index - doesn't exist */
+	test_num = "7";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	printf("%s\n\n%s\n\n","Get Index - Doesn't Exist: ", get_index(index_uri));
+
 	/* get index - standard */
+	test_num = "8";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Get Index - Standard: ", get_index(index_uri));
+
 	/* update document - doesn't exist */
+	test_num = "9";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	printf("%s\n\n%s\n\n","Update Document - Doesn't Exist: ", update_document(type_uri,index_name,1,2,index_name));
+	delete_index(index_uri);
+
 	/* update document - standard */
+	test_num = "10";
+	index_name = join((const char*[2]){"test",test_num},2);
+	index_uri = join((const char*[4]){"http://",hostname,"/",index_name},4);
+	type_uri = join((const char*[3]){index_uri,"/",index_name},3);
+	create_index(index_uri);
+	create_document(type_uri,index_name,1,2,index_name);
+	printf("%s\n\n%s\n\n","Update Document - Standard: ", update_document(type_uri,index_name,1,2,index_name));
+	delete_index(index_uri);
+
 	/* delete document - doesn't exit */
 	/* delete document - standard */
 	/* delete index - deoesn't exist */
